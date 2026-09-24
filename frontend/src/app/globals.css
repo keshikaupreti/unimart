@@ -7,3 +7,11 @@
 .hero-glow{position:absolute;inset:0;pointer-events:none}
 /* Motion animates transform; center toasts without relying on that property. */
 .toast{left:16px;right:16px;margin-inline:auto;transform:none}
+
+/* Keep every form control, including browser-autofilled name fields, visually consistent. */
+input,select,textarea{min-height:46px;padding:11px 12px;line-height:1.4;transition:border-color .15s,box-shadow .15s}
+input::placeholder,textarea::placeholder{color:#7b8780;opacity:1}
+input:hover,select:hover,textarea:hover{border-color:#9eada2}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px #325f4626}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ink);-webkit-box-shadow:0 0 0 1000px white inset;transition:background-color 5000s ease-in-out 0s}
+textarea{min-height:unset}
