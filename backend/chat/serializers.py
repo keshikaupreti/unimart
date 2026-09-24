@@ -7,6 +7,12 @@ from .models import Conversation, Message
 
 
 class ConversationSerializer(serializers.ModelSerializer):
+    archived = serializers.SerializerMethodField()
+
+    def get_archived(self, obj):
+        user = self.context["request"].user
+        return obj.buyer_archived if user.id == obj.buyer_id else obj.seller_archived
+
     buyer = PublicUserSerializer(read_only=True)
     seller = PublicUserSerializer(read_only=True)
     listing_title = serializers.CharField(source="listing.title", read_only=True)
@@ -14,7 +20,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = (
-            "id", "listing", "listing_title", "buyer", "seller",
+            "id", "listing", "listing_title", "buyer", "seller", "archived",
             "created_at", "updated_at",
         )
         read_only_fields = (

@@ -59,3 +59,5 @@ The backend tests cover account registration/login/profile/token rotation/logout
 From this directory, run `docker compose up --build -d --wait` to start both the backend and sibling frontend. Open http://localhost:3000 for the app and http://localhost:8000/admin/ for administration. Docker uses its own persistent SQLite and media volumes, leaving your local data untouched.
 
 See [Docker setup and verification](docker/README.md) for first-use steps, container checks, ports, and shutdown commands.
+
+Conversation archiving is personal: `POST /api/conversations/<UUID>/archive/` archives for the signed-in participant; `DELETE` on the same endpoint restores it. Conversation responses include the current participant’s `archived` flag. The inbox has Inbox and Archived views. Archiving preserves messages and does not affect the other participant. Chats stay archived until manually restored, and remain accessible from purchase activity.

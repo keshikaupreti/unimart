@@ -38,6 +38,30 @@ class ConversationAPITests(TestCase):
         self.seller, self.buyer, self.outsider, self.listing = make_users_and_listing()
         self.client = APIClient()
 
+    def test_archive_is_private_reversible_and_preserves_messages(self):
+        conversation = Conversation.objects.create(
+            listing=self.listing, buyer=self.buyer, seller=self.seller,
+        )
+        Message.objects.create(conversation=conversation, sender=self.buyer, content="Hello")
+        url = f"/api/conversations/{conversation.pk}/archive/"
+        self.client.force_authenticate(self.outsider)
+        self.assertEqual(self.client.post(url).status_code, 404)
+        self.assertEqual(self.client.delete(url).status_code, 404)
+        self.client.force_authenticate(self.buyer)
+        self.assertTrue(self.client.post(url).data["archived"])
+        self.assertTrue(self.client.post(url).data["archived"])
+        self.assertTrue(self.client.get("/api/conversations/").data["results"][0]["archived"])
+        self.client.force_authenticate(self.seller)
+        self.assertFalse(self.client.get("/api/conversations/").data["results"][0]["archived"])
+        self.assertTrue(self.client.post(url).data["archived"])
+        self.client.force_authenticate(self.buyer)
+        self.assertFalse(self.client.delete(url).data["archived"])
+        conversation.refresh_from_db()
+        self.assertTrue(conversation.seller_archived)
+        self.assertFalse(conversation.buyer_archived)
+        response = self.client.get(f"/api/conversations/{conversation.pk}/messages/")
+        self.assertEqual(response.data["results"][0]["content"], "Hello")
+
     def test_conversation_and_message_access(self):
         self.client.force_authenticate(self.buyer)
         response = self.client.post(

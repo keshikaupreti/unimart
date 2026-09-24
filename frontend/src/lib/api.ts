@@ -3,7 +3,7 @@ export type Person = { id: string; username: string; avatar?: string };
 export type User = Person & { first_name: string; email: string };
 export type Listing = { id: string; title: string; description: string; price: string; condition: string; status: string; category: string; category_name: string; seller: Person; images: { id: string; image: string }[]; created_at: string };
 export type Saved = { id: string; listing: string; listing_detail: Listing };
-export type Conversation = { id: string; listing: string; listing_title: string; buyer: Person; seller: Person };
+export type Conversation = { archived: boolean; id: string; listing: string; listing_title: string; buyer: Person; seller: Person };
 export type Message = { id: string; sender: Person; content: string; created_at: string };
 const token = () => typeof window !== 'undefined' ? sessionStorage.getItem('unimart-access') : null;
 export function setSession(tokens?: { access: string; refresh: string }) {

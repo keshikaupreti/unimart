@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { allPages, api, type Listing, type Person, type User } from '@/lib/api';
+import { allPages, api, type Conversation, type Listing, type Person, type User } from '@/lib/api';
 
 type Location = { id: string; name: string; description: string };
 type Sale = { id: string; listing: string; listing_title: string; buyer: Person; seller: Person; status: string; meetup_time: string; meetup_location_detail: Location };
@@ -85,7 +85,7 @@ export function SellerReviews({ seller }: { seller: Person }) {
   </section>;
 }
 
-export function Activity({ user, onChange }: { user: User; onChange: () => void }) {
+export function Activity({ user, onChange, onConversation }: { user: User; onChange: () => void; onConversation: (conversation: Conversation) => void }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [disputes, setDisputes] = useState<Case[]>([]);
@@ -116,6 +116,12 @@ export function Activity({ user, onChange }: { user: User; onChange: () => void 
     } catch (error) { setError(errorMessage(error)); }
     finally { setBusy(false); }
   }
+  async function openConversation(sale: Sale) {
+    setBusy(true); setError('');
+    try { onConversation(await api<Conversation>(`transactions/${sale.id}/conversation/`, { method: 'POST' })); }
+    catch (error) { setError(errorMessage(error)); }
+    finally { setBusy(false); }
+  }
   function submit(event: FormEvent<HTMLFormElement>, sale: Sale) {
     event.preventDefault(); const data = new FormData(event.currentTarget);
     if (form?.kind === 'review') void act('reviews/', { transaction: sale.id, rating: Number(data.get('rating')), comment: data.get('comment') });
@@ -134,6 +140,7 @@ export function Activity({ user, onChange }: { user: User; onChange: () => void 
           <h4>{sale.listing_title}</h4><p>{seller ? `Selling to ${sale.buyer.username}` : `Buying from ${sale.seller.username}`} · <strong>{label(sale.status)}</strong></p>
           <p>{sale.meetup_location_detail.name} · {new Date(sale.meetup_time).toLocaleString()}</p>
           <div className="trade-actions">
+            {['accepted', 'completed'].includes(sale.status) && (seller || sale.buyer.id === user.id) && <button className="button secondary" disabled={busy} onClick={() => openConversation(sale)}>Message {seller ? 'buyer' : 'seller'}</button>}
             {sale.status === 'requested' && seller && <><button className="button primary" disabled={busy} onClick={() => act(`transactions/${sale.id}/accept/`)}>Accept request</button><button className="button secondary" disabled={busy} onClick={() => act(`transactions/${sale.id}/reject/`)}>Reject request</button></>}
             {((sale.status === 'requested' && !seller) || sale.status === 'accepted') && <button className="button secondary" disabled={busy} onClick={() => act(`transactions/${sale.id}/cancel/`)}>Cancel request</button>}
             {sale.status === 'accepted' && seller && <button className="button primary" disabled={busy} onClick={() => act(`transactions/${sale.id}/complete/`)}>Confirm handover complete</button>}
