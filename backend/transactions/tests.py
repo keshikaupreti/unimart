@@ -48,6 +48,36 @@ class PurchaseFlowTests(TestCase):
         self.assertEqual(response.status_code, 201)
         return response.data["id"]
 
+    def test_purchase_conversation_after_acceptance(self):
+        from chat.models import Conversation
+
+        transaction_id = self.request_purchase()
+        url = f"/api/transactions/{transaction_id}/conversation/"
+        self.assertEqual(self.client.post(url).status_code, 400)
+        self.client.force_authenticate(self.seller)
+        self.assertEqual(self.client.post(
+            f"/api/transactions/{transaction_id}/accept/"
+        ).status_code, 200)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        conversation_id = response.data["id"]
+        for user in (self.buyer, self.seller):
+            self.client.force_authenticate(user)
+            self.assertEqual(self.client.post(url).data["id"], conversation_id)
+            self.assertEqual(self.client.post(
+                f"/api/conversations/{conversation_id}/messages/",
+                {"content": "See you at the library"}, format="json",
+            ).status_code, 201)
+        self.assertEqual(Conversation.objects.count(), 1)
+        self.client.force_authenticate(self.other)
+        self.assertEqual(self.client.post(url).status_code, 404)
+        self.other.is_staff = True
+        self.other.save()
+        self.assertEqual(self.client.post(url).status_code, 403)
+        self.client.force_authenticate(self.seller)
+        self.client.post(f"/api/transactions/{transaction_id}/complete/")
+        self.assertEqual(self.client.post(url).data["id"], conversation_id)
+
     def test_request_accept_complete_review_and_listing_freeze(self):
         transaction_id = self.request_purchase()
         self.assertEqual(Transaction.objects.get(pk=transaction_id).status, "requested")

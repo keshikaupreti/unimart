@@ -18,6 +18,9 @@ class Conversation(TimeStampedModel):
         related_name="selling_conversations",
     )
 
+    buyer_archived = models.BooleanField(default=False)
+    seller_archived = models.BooleanField(default=False)
+
     class Meta:
         ordering = ["-updated_at"]
         constraints = [

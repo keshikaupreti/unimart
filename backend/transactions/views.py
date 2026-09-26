@@ -9,11 +9,13 @@ from rest_framework import (
 )
 
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from listings.models import Listing
+from chat.models import Conversation
+from chat.serializers import ConversationSerializer
 
 from .models import (
     MeetupLocation,
@@ -98,6 +100,19 @@ class TransactionViewSet(
             buyer=self.request.user,
             seller=listing.seller,
         )
+
+    @action(detail=True, methods=["post"])
+    def conversation(self, request, pk=None):
+        obj = self.get_object()
+        if request.user.id not in (obj.buyer_id, obj.seller_id):
+            raise PermissionDenied("Only the buyer and seller can access this conversation.")
+        if obj.status not in (Transaction.Status.ACCEPTED, Transaction.Status.COMPLETED):
+            raise ValidationError("Accept the purchase request before opening its conversation.")
+        conversation, _ = Conversation.objects.get_or_create(
+            listing=obj.listing, buyer=obj.buyer,
+            defaults={"seller": obj.seller},
+        )
+        return Response(ConversationSerializer(conversation, context={"request": request}).data)
 
     def _locked_transaction(
         self,

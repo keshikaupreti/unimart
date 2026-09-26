@@ -33,6 +33,14 @@ class ConversationViewSet(
         listing = serializer.validated_data["listing"]
         serializer.save(buyer=self.request.user, seller=listing.seller)
 
+    @action(detail=True, methods=["post", "delete"])
+    def archive(self, request, pk=None):
+        conversation = self.get_object()
+        field = "buyer_archived" if request.user.id == conversation.buyer_id else "seller_archived"
+        setattr(conversation, field, request.method == "POST")
+        conversation.save(update_fields=[field])
+        return Response(self.get_serializer(conversation).data)
+
     @action(detail=True, methods=["get", "post"])
     def messages(self, request, pk=None):
         conversation = self.get_object()
